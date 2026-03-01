@@ -97,10 +97,10 @@ class ReportProgramAgent(BaseAgent):
         return "[Error: All LLM attempts failed after 3 retries.]"
     
     # --- Main Execution ---
-    def run(self, section_text: str, purposes: dict | None = None, metadata=None) -> Path:
+    def run(self, section_text: str, purposes: dict | None = None, metadata=None) -> dict:
         if not section_text:
             self.logger.warning("No text provided to ReportProgramAgent.")
-            return Path()
+            return {"type": "report", "purpose": "", "code": ""}
 
         full_context = section_text.strip()
 
@@ -186,4 +186,8 @@ class ReportProgramAgent(BaseAgent):
 
         # self.logger.info(f"✅ Final ABAP report generated: {final_code}")
         self.logger.info("✅ ABAP report generated successfully.")
-        return draft_code
+        return {
+            "type": "report",
+            "purpose": "ABAP Report Program generated from requirements",
+            "code": draft_code
+        }
