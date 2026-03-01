@@ -21,6 +21,7 @@ from dotenv import load_dotenv
 from utils.file_utils import get_job_dir
 from utils.job_utils import split_sections
 from utils.logger_config import setup_logger
+from utils import job_store
 
 from agents.structure.structure_agent import StructureAgent
 from agents.table.table_agent import TableAgent
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="SAP ABAP Code Generator (AI Agents)")
 
-# In-memory job store
+# In-memory job cache (backed by file storage)
 jobs = {}
 
 
@@ -81,6 +82,7 @@ def run_job(job_id: str, requirement_text: str):
     job_dir = get_job_dir()
     jobs[job_id]["status"] = "running"
     jobs[job_id]["started_at"] = datetime.utcnow().isoformat()
+    job_store.save_job(job_id, jobs[job_id])
 
     try:
 
@@ -306,13 +308,15 @@ def run_job(job_id: str, requirement_text: str):
             "zip_bytes": zip_buffer.getvalue(),
             "outputs": [f[0] for f in files_to_zip],
         })
+        job_store.save_job(job_id, jobs[job_id])
 
-        logger.info(f"✅ Job {job_id} completed successfully (in-memory ZIP).")
+        logger.info(f"✅ Job {job_id} completed successfully.")
 
     except Exception as e:
         logger.exception(f"❌ Job {job_id} failed: {e}")
         jobs[job_id]["status"] = "failed"
         jobs[job_id]["error"] = str(e)
+        job_store.save_job(job_id, jobs[job_id])
 # ----------------------------- ENDPOINTS -----------------------------
 
 @app.post("/generate")
@@ -328,6 +332,7 @@ def create_job(payload: RequirementPayload, background_tasks: BackgroundTasks):
         "status": "queued",
         "created_at": datetime.utcnow().isoformat()
     }
+    job_store.save_job(job_id, jobs[job_id])
 
     background_tasks.add_task(run_job, job_id, requirement_text)
     logger.info(f"Job {job_id} queued")
@@ -341,10 +346,15 @@ def create_job(payload: RequirementPayload, background_tasks: BackgroundTasks):
 @app.get("/generate/{job_id}")
 def job_status(job_id: str):
     """Check job status or download ZIP if finished."""
-    job = jobs.get(job_id)
+    # Try memory first, then disk
+    job = jobs.get(job_id) or job_store.load_job(job_id)
 
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    
+    # Cache in memory
+    if job_id not in jobs:
+        jobs[job_id] = job
 
     if job.get("status") == "finished":
         if "zip_bytes" not in job:
