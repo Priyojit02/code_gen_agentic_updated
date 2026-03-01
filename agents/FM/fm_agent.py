@@ -26,7 +26,7 @@ class FmAgent(BaseAgent):
     def _init_llm(self):
         """Initialize the LLM client."""
         return ChatOpenAI(
-            model_name=os.getenv("FM_MODEL_NAME", "gpt-4.1"),
+            model_name=os.getenv("FM_MODEL_NAME", "gpt-5"),
             temperature=float(os.getenv("FM_TEMPERATURE", "0.1")),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
         )
