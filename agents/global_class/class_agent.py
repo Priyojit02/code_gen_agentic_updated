@@ -24,7 +24,7 @@ class ClassAgent(BaseAgent):
 
     def _init_llm(self):
         return ChatOpenAI(
-            model_name=os.getenv("CLASS_MODEL_NAME", "gpt-5"),
+            model_name=os.getenv("CLASS_MODEL_NAME", "gpt-4.1"),
             temperature=float(os.getenv("CLASS_TEMPERATURE", "0.1")),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
         )

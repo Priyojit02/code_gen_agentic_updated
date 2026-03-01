@@ -24,7 +24,7 @@ class ReportProgramAgent(BaseAgent):
 
     def _init_llm(self):
         return ChatOpenAI(
-            model_name=os.getenv("REPORT_MODEL_NAME", "gpt-5"),
+            model_name=os.getenv("REPORT_MODEL_NAME", "gpt-4.1"),
             temperature=float(os.getenv("REPORT_TEMPERATURE", "0.1")),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
         )
